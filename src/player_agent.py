@@ -1,10 +1,8 @@
 import random
-import pickle
 from collections import defaultdict, Counter
 
 class GreedyPlayer:
-    def __init__(self, n, word_length_to_n, ngram_models_dict, ngram_models_rev_dict):
-        self.n = n
+    def __init__(self, word_length_to_n, ngram_models_dict, ngram_models_rev_dict):
         self.k = 0.05
         self.alphabet = "abcdefghijklmnopqrstuvwxyz"
         self.word_length_to_n = word_length_to_n
@@ -16,7 +14,7 @@ class GreedyPlayer:
         n = self.word_length_to_n.get(word_length, 2)
         self.ngrams = self.ngram_models[n]
         self.ngrams_rev = self.ngram_models_rev[n]
-        padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>']
+        padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>'] * (n - 1)
         known_letters = {ch for ch in known_word if ch != '_'}
         known_letters = known_letters.union(already_guessed_letters)
         alphabet = set(self.alphabet) - known_letters
@@ -48,8 +46,7 @@ class GreedyPlayer:
                         reverse_prob = reverse_count / total_count
                     else:
                         reverse_prob = self.k / (self.k * len(alphabet))
-
-                    #candidates[letter] += forward_prob + reverse_prob gives 52712/170671 for n=4 gram
+                        
                     candidates[letter] += forward_prob * reverse_prob
 
         sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
