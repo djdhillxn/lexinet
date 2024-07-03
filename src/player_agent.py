@@ -45,8 +45,6 @@ class GreedyPlayer:
     def guess_letter(self, known_word, already_guessed_letters):
         word_length = len(known_word)
         n = self.word_length_to_n.get(word_length, 2)
-        #self.ngrams = self.ngram_models[n]
-        #self.ngrams_rev = self.ngram_models_rev[n]
         padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>'] * (n - 1)
         known_letters = {ch for ch in known_word if ch != '_'}
         known_letters = known_letters.union(already_guessed_letters)
@@ -54,7 +52,6 @@ class GreedyPlayer:
         candidates = defaultdict(float)
         if len(alphabet) == 26:
             return 'e'
-        #keys_to_use = [n]
         for i in range(n-1, len(padded_word) - (n-1)):
             if padded_word[i] == '_':
                 for letter in alphabet:
@@ -72,8 +69,8 @@ class GreedyPlayer:
         if sorted_candidates:
             best_letter = sorted_candidates[0][0]
         else:
-            best_letter = random.choice(list(alphabet))  # If no candidates, guess a random letter
-
+            best_letter = random.choice(list(alphabet))
+        
         return best_letter
 
     """
