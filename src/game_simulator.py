@@ -18,14 +18,14 @@ class GameSimulator:
     def get_word_length_to_n(self):
         word_length_to_n = {}
         for l in range(1, 50):
-            if l in range(8, 16):
+            if l in range(6, 50):
                 word_length_to_n[l] = 6
-            elif l in range(5, 8):
-                word_length_to_n[l] = 6
-            elif l in range(4, 5):
+            elif l in range(4, 6):
                 word_length_to_n[l] = 5
+            elif l in [3]:
+                word_length_to_n[l] = 2
             else:
-                word_length_to_n[l] = 4
+                word_length_to_n[l] = 2
         return word_length_to_n
     
     def create_word_length_to_n(self, n):
@@ -76,6 +76,8 @@ class GameSimulator:
             word_length_to_n = self.create_word_length_to_n(n)
             print(word_length_to_n)
             self.player = GreedyPlayer(word_length_to_n, self.ngram_models, self.ngram_models_rev)
+        else:
+            print(self.word_length_to_n)
         num_wins = 0
         total_games = 0
         results_by_length = defaultdict(lambda: {'wins': 0, 'total': 0})
@@ -94,7 +96,7 @@ if __name__ == "__main__":
     models_dir = "results/models"
     num_games = 1000
     game_simulator = GameSimulator(word_list_path, models_dir, max_lives=6, num_games=1000)
-    num_wins, total_games, results_by_length = game_simulator.simulate_games(n=2)
+    num_wins, total_games, results_by_length = game_simulator.simulate_games()
     print(f"Number of games won: {num_wins} / {total_games}")
     print("results_by_length:")
     print(results_by_length)

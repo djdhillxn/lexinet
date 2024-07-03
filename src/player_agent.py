@@ -3,11 +3,36 @@ from collections import defaultdict, Counter
 
 class GreedyPlayer:
     def __init__(self, word_length_to_n, ngram_models_dict, ngram_models_rev_dict):
-        self.k = 0.05
+        self.k = 0.05 #0.05
         self.alphabet = "abcdefghijklmnopqrstuvwxyz"
         self.word_length_to_n = word_length_to_n
         self.ngram_models = ngram_models_dict
         self.ngram_models_rev = ngram_models_rev_dict
+
+    def calculate_probability(self, padded_word, i, n, letter):
+        # Forward probability
+        suffix = letter
+        prefix = tuple(padded_word[i-(n-1):i])
+        forward_prob = 0
+        if prefix in self.ngrams:
+            forward_count = self.ngrams[prefix][suffix] + self.k
+            total_count = sum(self.ngrams[prefix].values()) + self.k * len(self.alphabet)
+            forward_prob = forward_count / total_count
+        elif self.k != 0:
+            forward_prob = self.k / (self.k * len(self.alphabet))
+
+        # Reverse probability
+        prefix = letter
+        suffix = tuple(padded_word[i+1:i+(n-1)+1])
+        reverse_prob = 0
+        if suffix in self.ngrams_rev:
+            reverse_count = self.ngrams_rev[suffix][prefix] + self.k
+            total_count = sum(self.ngrams_rev[suffix].values()) + self.k * len(self.alphabet)
+            reverse_prob = reverse_count / total_count
+        elif self.k != 0:
+            reverse_prob = self.k / (self.k * len(self.alphabet))
+
+        return forward_prob, reverse_prob
 
     def guess_letter(self, known_word, already_guessed_letters):
         word_length = len(known_word)
@@ -21,20 +46,25 @@ class GreedyPlayer:
         candidates = defaultdict(float)
         if len(alphabet) == 26:
             return 'e'
-
         for i in range(n-1, len(padded_word) - (n-1)):
             if padded_word[i] == '_':
                 for letter in alphabet:
+
+                    forward_prob, reverse_prob = self.calculate_probability(padded_word, i, n, letter)
+                    combined_prob = forward_prob * reverse_prob #- forward_prob * reverse_prob
+                    candidates[letter] += combined_prob
+
+                    """
                     # Forward probability
                     suffix = letter
                     prefix = tuple(padded_word[i-(n-1):i])
                     forward_prob = 0
                     if prefix in self.ngrams:
                         forward_count = self.ngrams[prefix][suffix] + self.k
-                        total_count = sum(self.ngrams[prefix].values()) + self.k * len(alphabet)
+                        total_count = sum(self.ngrams[prefix].values()) + self.k * len(self.alphabet)
                         forward_prob = forward_count / total_count
-                    else:
-                        forward_prob = self.k / (self.k * len(alphabet))
+                    elif self.k != 0:
+                        forward_prob = self.k / (self.k * len(self.alphabet))
 
                     # Reverse probability
                     prefix = letter
@@ -42,12 +72,14 @@ class GreedyPlayer:
                     reverse_prob = 0
                     if suffix in self.ngrams_rev:
                         reverse_count = self.ngrams_rev[suffix][prefix] + self.k
-                        total_count = sum(self.ngrams_rev[suffix].values()) + self.k * len(alphabet)
+                        total_count = sum(self.ngrams_rev[suffix].values()) + self.k * len(self.alphabet)
                         reverse_prob = reverse_count / total_count
-                    else:
-                        reverse_prob = self.k / (self.k * len(alphabet))
-                        
-                    candidates[letter] += forward_prob * reverse_prob
+                    elif self.k != 0:
+                        reverse_prob = self.k / (self.k * len(self.alphabet))
+
+                    combined_prob = forward_prob * reverse_prob + (forward_prob + reverse_prob) / 2
+                    candidates[letter] += combined_prob
+                    """
 
         sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
         if sorted_candidates:
