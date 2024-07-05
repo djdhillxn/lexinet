@@ -11,9 +11,10 @@ class GameSimulator:
         self.max_lives = max_lives
         self.num_games = num_games
         self.word_list = preprocess_data(load_data(word_list_path))
-        self.ngram_models, self.ngram_models_rev = self.load_all_models(models_dir)
+        #self.ngram_models, self.ngram_models_rev = self.load_all_models(models_dir)
+        self.ngram_models_kneser_ney = self.load_all_kneser_ney_models(models_dir)
         self.word_length_to_n = self.get_word_length_to_n()
-        self.player = GreedyPlayer(self.word_length_to_n, self.ngram_models, self.ngram_models_rev)
+        self.player = GreedyPlayer(self.word_length_to_n, self.ngram_models_kneser_ney)
         
     def get_word_length_to_n(self):
         word_length_to_n = {}
@@ -21,11 +22,11 @@ class GameSimulator:
             if l in range(6, 50):
                 word_length_to_n[l] = 6
             elif l in range(4, 6):
-                word_length_to_n[l] = 5
+                word_length_to_n[l] = 6
             elif l in [3]:
-                word_length_to_n[l] = 2
+                word_length_to_n[l] = 4
             else:
-                word_length_to_n[l] = 2
+                word_length_to_n[l] = 3
         return word_length_to_n
     
     def create_word_length_to_n(self, n):
@@ -34,22 +35,16 @@ class GameSimulator:
             word_length_to_n[l] = n
         return word_length_to_n
 
-    def load_all_models(self, models_dir):
-        n_values = [2, 3, 4, 5, 6]
-        ngram_models = {}
-        ngram_models_rev = {}
+    def load_all_kneser_ney_models(self, models_dir):
+        n_values = [3, 4, 5, 6]
+        ngram_models_kneser_ney = {}
         for n in n_values:
-            model_name = f"n_{n}_gram_model_new_age.pkl"
-            rev_model_name = f"n_{n}_gram_model_rev_new_age.pkl"
+            model_name = f"n_{n}_gram_model_kneser_ney.pkl"
             model_path = os.path.join(models_dir, model_name)
-            rev_ngram_model_path = os.path.join(models_dir, rev_model_name)
             with open(model_path, 'rb') as file:
-                ngram_models[n] = pickle.load(file)
+                ngram_models_kneser_ney[n] = pickle.load(file)
                 print("loading", model_path)
-            with open(rev_ngram_model_path, 'rb') as file:
-                ngram_models_rev[n] = pickle.load(file)
-                print("loading", rev_ngram_model_path)
-        return ngram_models, ngram_models_rev
+        return ngram_models_kneser_ney
 
     def play_game(self, actual_word, player=None):
         if player:
@@ -83,6 +78,8 @@ class GameSimulator:
         results_by_length = defaultdict(lambda: {'wins': 0, 'total': 0})
         for i, actual_word in tqdm(enumerate(self.word_list)):
             word_length = len(actual_word)
+            #if word_length > 7:
+            #    continue
             if self.play_game(actual_word):
                 num_wins += 1
                 results_by_length[word_length]['wins'] += 1
