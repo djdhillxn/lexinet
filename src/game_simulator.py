@@ -4,6 +4,7 @@ from collections import defaultdict
 import pickle
 import os
 from tqdm import tqdm
+import pandas as pd
 
 class GameSimulator:
     def __init__(self, word_list_path, models_dir, max_lives=6, num_games=1):
@@ -65,7 +66,7 @@ class GameSimulator:
                 lives -= 1
         return obscured_word == actual_word
 
-    def simulate_games(self, n=None):
+    def simulate_games(self, n=None, output_csv_path=None):
         if n:
             print(f"using n_{n}_grams")
             word_length_to_n = self.create_word_length_to_n(n)
@@ -85,7 +86,34 @@ class GameSimulator:
                 results_by_length[word_length]['wins'] += 1
             results_by_length[word_length]['total'] += 1
             total_games += 1
-        return num_wins, total_games, results_by_length
+
+        # Convert results_by_length to a pandas DataFrame
+        results_df = pd.DataFrame([
+            {'length': length, 'total': result['total'], 'wins': result['wins'], 
+             'win_rate': round((result['wins'] / result['total']) * 100, 2) if result['total'] > 0 else 0}
+            for length, result in results_by_length.items()
+        ])
+
+        # Sort by win_rate descending
+        results_df = results_df.sort_values(by='win_rate', ascending=False)
+
+        # Calculate total row
+        total_row = pd.DataFrame({
+            'length': ['Total'],
+            'total': [results_df['total'].sum()],
+            'wins': [results_df['wins'].sum()],
+            'win_rate': [round((results_df['wins'].sum() / results_df['total'].sum()) * 100, 2)]
+        })
+
+        # Append the total row to the DataFrame using pd.concat
+        results_df = pd.concat([results_df, total_row], ignore_index=True)
+        
+        # Save DataFrame to CSV if a path is provided
+        if output_csv_path:
+            results_df.to_csv(output_csv_path, index=False)
+            print(f"Results saved to {output_csv_path}")
+
+        return num_wins, total_games, results_by_length, results_df
 
 if __name__ == "__main__":
     # Example usage
@@ -93,7 +121,7 @@ if __name__ == "__main__":
     models_dir = "results/models"
     num_games = 1000
     game_simulator = GameSimulator(word_list_path, models_dir, max_lives=6, num_games=1000)
-    num_wins, total_games, results_by_length = game_simulator.simulate_games()
+    num_wins, total_games, results_by_length, results_df = game_simulator.simulate_games(output_csv_path='game_results.csv')
     print(f"Number of games won: {num_wins} / {total_games}")
     print("results_by_length:")
     print(results_by_length)
