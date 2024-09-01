@@ -1,10 +1,10 @@
-# hangman
+# lexinet
 
-## ~/hangman/src $ python3 train.py
+## ~/lexinet/src $ python3 train.py
 
 To train n-gram models
 
-## ~/hangman/src $ python3 evaluate.py 
+## ~/lexinet/src $ python3 evaluate.py 
 - Perplexity for 2-gram model: 12.697945246222194
 - Perplexity for 3-gram model: 9.535222156196419
 - Perplexity for 4-gram model: 7.553463794214225
