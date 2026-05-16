@@ -5,7 +5,7 @@ from nltk.util import ngrams
 from collections import defaultdict, Counter
 import pickle
 import os
-from data_preparation import load_data, preprocess_data
+from src.data_preparation import load_data, preprocess_data
 from tqdm import tqdm
 from itertools import combinations
 
@@ -23,7 +23,7 @@ class NgramModel:
         self.D = 0.75
         self.alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-    def save_all(self, models_dir):
+    def save_all(self, models_dir, save_name=None):
         data = {
             'ngrams': self.ngrams,
             'ngrams_rev': self.ngrams_rev,
@@ -33,7 +33,10 @@ class NgramModel:
             'unigrams_rev': self.unigrams_rev
         }
 
-        path = os.path.join(models_dir, f"n_{self.n}_gram_model_kneser_ney.pkl")
+        if save_name == None:
+            path = os.path.join(models_dir, f"n_{self.n}_gram_model_kneser_ney.pkl")
+        else:
+            path = os.path.join(models_dir, save_name)
         with open(path, 'wb') as f:
             pickle.dump(data, f)
 
@@ -165,34 +168,36 @@ class NgramModel:
         with open(file_path, 'wb') as file:
             pickle.dump(self.ngrams_rev, file)
 
-# Train the n-gram model
-n = 3
-ngram_model = NgramModel(n)
+if __name__ == '__main__':
 
-train_data_path = "data/train/words_train.txt"
-test_data_path = "data/test/words_test.txt"
+    # Train the n-gram model
+    n = 3
+    ngram_model = NgramModel(n)
 
-# Load and preprocess train and test data
-train_data = preprocess_data(load_data(train_data_path))
-test_data = preprocess_data(load_data(test_data_path))
+    train_data_path = "data/train/words_train.txt"
+    test_data_path = "data/test/words_test.txt"
 
-
-ngram_model.train(train_data)
-ngram_model.train_reverse(train_data)
+    # Load and preprocess train and test data
+    train_data = preprocess_data(load_data(train_data_path))
+    test_data = preprocess_data(load_data(test_data_path))
 
 
-model_dir = "results/models"
-os.makedirs(model_dir, exist_ok=True)
-
-ngram_model.save_all(model_dir)
+    ngram_model.train(train_data)
+    ngram_model.train_reverse(train_data)
 
 
-"""
-# Save the n-gram model
-model_path = os.path.join(model_dir, f"n_{n}_gram_model_new_age.pkl")
-ngram_model.save(model_path)
+    model_dir = "results/models"
+    os.makedirs(model_dir, exist_ok=True)
 
-# Save the n-gram model
-model_path_rev = os.path.join(model_dir, f"n_{n}_gram_model_rev_new_age.pkl")
-ngram_model.save_rev(model_path_rev)
-"""
+    ngram_model.save_all(model_dir)
+
+
+    """
+    # Save the n-gram model
+    model_path = os.path.join(model_dir, f"n_{n}_gram_model_new_age.pkl")
+    ngram_model.save(model_path)
+
+    # Save the n-gram model
+    model_path_rev = os.path.join(model_dir, f"n_{n}_gram_model_rev_new_age.pkl")
+    ngram_model.save_rev(model_path_rev)
+    """

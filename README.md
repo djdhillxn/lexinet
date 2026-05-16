@@ -3,7 +3,7 @@
 This [gameSimulator](notebooks/gameSimulator.ipynb) notebook allows to play the Hangman Challenge very visually. \
 If you are able to take guesses so that you unravel the whole world whilst the incorrect character guesses are less than the Max lives: 6, you win!
 
-Find the detailed game simulator documentation [here](src/documentation.md) 
+Find the detailed game simulator documentation [here](notebooks/documentation.md) 
 
 LexiNet is the model that we use to run and win the hangman challenge. It is basically an ensemble model. This project has focused on building and evaluating n-gram language models for word prediction and guessing games. This repository includes code for training models, simulating games, and evaluating model performance.
 
