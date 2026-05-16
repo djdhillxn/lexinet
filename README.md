@@ -1,17 +1,20 @@
 # LexiNet
 
-LexiNet is a project focused on building and evaluating n-gram language models for word prediction and guessing games. This repository includes code for training models, simulating games, and evaluating model performance.
-
-## Game Simulation
-
-This notebook allows to recreate the Hangman Challenge very visually. \
+This [gameSimulator](notebooks/gameSimulator.ipynb) notebook allows to play the Hangman Challenge very visually. \
 If you are able to take guesses so that you unravel the whole world whilst the incorrect character guesses are less than the Max lives: 6, you win!
 
-Find game simulator documentation [here](src/documentation.md) 
+Find the detailed game simulator documentation [here](src/documentation.md) 
+
+LexiNet is the model that we use to run and win the hangman challenge. It is basically an ensemble model. This project has focused on building and evaluating n-gram language models for word prediction and guessing games. This repository includes code for training models, simulating games, and evaluating model performance.
+
 
 # Training using N-Gram Language Models
 
-How is a language model defined? Language Model take in a input context and give a prediction of the next token(character). 
+How is a language model (LM) defined? Language Model take in a input context and give a prediction of the next token(character). 
+
+I liked it, I was good at --
+
+A language model would look at the above line, whose last word is 'at', and predict the next word. A trained LM and also a fan of the show would say with high probability that this next word should be: 'it'.
 
 ## Forward
 
