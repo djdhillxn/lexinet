@@ -64,6 +64,29 @@ Total Games: 170671 \
 Games Won: 109689 \
 Accuracy: 64.27 %
 
+# Main scripts
+
+## ~/lexinet/src $ python3 train.py
+
+To train n-gram models
+
+## ~/lexinet/src $ python3 evaluate.py 
+
+Perplexity is a commonly used intrinsic evaluation measure for the trained language model. 
+Low values means better likelihood of the words set on which it is evaluated.
+The perplexity values below are for the individual n-gram models calculated on the training set.
+We can observe that the perplexity values improve with a minima for the 5-gram but become bad on increasing further, indicating a tradeoff between the n-gram size to the performance.
+This can be argued because most of the words in the training corpus are of size 8 or 9, and a context of 4 or 5 previous characters gives good results for generalizing to predict new unseen words. 
+See the [eda.ipynb](notebooks/eda.ipynb) notebook which delves into analysizng word-length to word-counts comparative analyses.
+
+
+- Perplexity for 2-gram model: 12.697945246222194
+- Perplexity for 3-gram model: 9.535222156196419
+- Perplexity for 4-gram model: 7.553463794214225
+- Perplexity for 5-gram model: 7.2955623708271515
+- Perplexity for 6-gram model: 10.313036377911908
+- Perplexity for 7-gram model: 18.320199756720747
+
 # Repository Structure
 
 ```
