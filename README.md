@@ -56,6 +56,16 @@ A language model would look at the above line, whose last word is 'at', and pred
 
 6.	**Updating Counts**: The counts of these reverse N-grams and their masked variants are updated in the self.ngrams_rev dictionary. This allows the model to predict the prefix (preceding letter) based on the following context.
 
+## Scripts for training and evaluation
+
+To train n-gram models
+
+ ~/lexinet/src $ python3 train.py
+
+To evaluate the trained n-gram models
+
+ ~/lexinet/src $ python3 evaluate.py 
+
 ## Training and Validation Results
 We have trained using a [train set](/data/train/words_train.txt) of 227K words and then validated on a [val set](/data/test/words_test.txt) of 170K words.
 
@@ -64,21 +74,15 @@ Total Games: 170671 \
 Games Won: 109689 \
 Accuracy: 64.27 %
 
-# Main scripts
-
-## ~/lexinet/src $ python3 train.py
-
-To train n-gram models
-
-## ~/lexinet/src $ python3 evaluate.py 
+# Perplexity
 
 Perplexity is a commonly used intrinsic evaluation measure for the trained language model. 
 Low values means better likelihood of the words set on which it is evaluated.
 The perplexity values below are for the individual n-gram models calculated on the training set.
+
 We can observe that the perplexity values improve with a minima for the 5-gram but become bad on increasing further, indicating a tradeoff between the n-gram size to the performance.
 This can be argued because most of the words in the training corpus are of size 8 or 9, and a context of 4 or 5 previous characters gives good results for generalizing to predict new unseen words. 
 See the [eda.ipynb](notebooks/eda.ipynb) notebook which delves into analysizng word-length to word-counts comparative analyses.
-
 
 - Perplexity for 2-gram model: 12.697945246222194
 - Perplexity for 3-gram model: 9.535222156196419
@@ -98,8 +102,8 @@ See the [eda.ipynb](notebooks/eda.ipynb) notebook which delves into analysizng w
 │   └── train
 ├── game_results.csv
 ├── notebooks
-│   └── EDA.ipynb
-├── perplexity.md
+│   |── EDA.ipynb
+|   └── gameSimulator.ipynb
 ├── requirements.txt
 ├── results
 │   └── models
