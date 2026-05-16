@@ -2,48 +2,16 @@
 
 LexiNet is a project focused on building and evaluating n-gram language models for word prediction and guessing games. This repository includes code for training models, simulating games, and evaluating model performance.
 
-## Results
-Training on [train set](/data/train/words_train.txt) \
-Validatiaon on [val set](/data/test/words_test.txt)
+## Game Simulation
 
+This notebook allows to recreate the Hangman Challenge very visually. \
+If you are able to take guesses so that you unravel the whole world whilst the incorrect character guesses are less than the Max lives: 6, you win!
 
-[Validation Set Results](game_results.csv) \
-Total Games: 170671 \
-Games Won: 109689 \
-Accuracy: 64.27 %
+Find game simulator documentation [here](src/documentation.md) 
 
-## Repository Structure
+# Training using N-Gram Language Models
 
-```
-~/Garage/lexinet $ tree -L 2
-.
-├── README.md
-├── data
-│   ├── test
-│   └── train
-├── game_results.csv
-├── notebooks
-│   └── EDA.ipynb
-├── perplexity.md
-├── requirements.txt
-├── results
-│   └── models
-└── src
-    ├── __init__.py
-    ├── data_preparation.py
-    ├── documentation.md
-    ├── evaluate.py
-    ├── game_simulator.py
-    ├── player_agent.py
-    └── train.py
-```
-
-## N-Gram Language Models
-
-### Definition: Language Model
-
-
-# Training
+How is a language model defined? Language Model take in a input context and give a prediction of the next token(character). 
 
 ## Forward
 
@@ -85,10 +53,40 @@ Accuracy: 64.27 %
 
 6.	**Updating Counts**: The counts of these reverse N-grams and their masked variants are updated in the self.ngrams_rev dictionary. This allows the model to predict the prefix (preceding letter) based on the following context.
 
+## Training and Validation Results
+We have trained using a [train set](/data/train/words_train.txt) of 227K words and then validated on a [val set](/data/test/words_test.txt) of 170K words.
 
-## Game Simulation
+[Validation Set Results](game_results.csv) \
+Total Games: 170671 \
+Games Won: 109689 \
+Accuracy: 64.27 %
 
-Recreate Hangman Challenge. \
-Max lives: 6
+# Repository Structure
 
-Find game simulator documentation [here](src/documentation.md) 
+```
+~/Garage/lexinet $ tree -L 2
+.
+├── README.md
+├── data
+│   ├── test
+│   └── train
+├── game_results.csv
+├── notebooks
+│   └── EDA.ipynb
+├── perplexity.md
+├── requirements.txt
+├── results
+│   └── models
+└── src
+    ├── __init__.py
+    ├── data_preparation.py
+    ├── documentation.md
+    ├── evaluate.py
+    ├── game_simulator.py
+    ├── player_agent.py
+    └── train.py
+```
+
+# References 
+
+This project takes big inspiration from the Speech and Language Processing book by Dan Jurafsky https://web.stanford.edu/~jurafsky/slp3/ . See Chapter 3 on N-gram language models. 
