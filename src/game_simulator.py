@@ -198,7 +198,7 @@ class GameSimulator:
             results_df = self._create_results_df(results_by_length)
             self._save_results_if_needed(results_df, output_csv_path)
             return num_wins, total_games, results_by_length, results_df
-
+        print("num workers 1 code is running successfully right...")
         num_wins = 0
         total_games = 0
         results_by_length = defaultdict(lambda: {'wins': 0, 'total': 0})
