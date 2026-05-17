@@ -1,5 +1,5 @@
-from data_preparation import load_data, preprocess_data
-from player_agent import GreedyPlayer
+from src.data_preparation import load_data, preprocess_data
+from src.player_agent import GreedyPlayer
 from collections import defaultdict
 import pickle
 import os
@@ -7,14 +7,16 @@ from tqdm import tqdm
 import pandas as pd
 
 class GameSimulator:
-    def __init__(self, word_list_path, models_dir, max_lives=6, num_games=1):
+    def __init__(self, word_list_path, models_dir, run_name='kneser_ney', max_lives=6, num_games=1):
         self.word_list_path = word_list_path
         self.max_lives = max_lives
         self.num_games = num_games
+        self.models_dir = models_dir
+        self.run_name = run_name
         self.word_list = preprocess_data(load_data(word_list_path))
-        #self.ngram_models, self.ngram_models_rev = self.load_all_models(models_dir)
-        self.ngram_models_kneser_ney = self.load_all_kneser_ney_models(models_dir)
         self.word_length_to_n = self.get_word_length_to_n()
+        #self.ngram_models, self.ngram_models_rev = self.load_all_models(models_dir)
+        self.ngram_models_kneser_ney = self.load_all_kneser_ney_models()
         self.player = GreedyPlayer(self.word_length_to_n, self.ngram_models_kneser_ney)
         
     def get_word_length_to_n(self):
@@ -36,12 +38,12 @@ class GameSimulator:
             word_length_to_n[l] = n
         return word_length_to_n
 
-    def load_all_kneser_ney_models(self, models_dir):
+    def load_all_kneser_ney_models(self):
         n_values = [3, 4, 5, 6]
         ngram_models_kneser_ney = {}
         for n in n_values:
-            model_name = f"n_{n}_gram_model_kneser_ney.pkl"
-            model_path = os.path.join(models_dir, model_name)
+            model_name = f"n_{n}_gram_model_{self.run_name}.pkl"
+            model_path = os.path.join(self.models_dir, model_name)
             with open(model_path, 'rb') as file:
                 ngram_models_kneser_ney[n] = pickle.load(file)
                 print("loading", model_path)
