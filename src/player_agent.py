@@ -14,9 +14,22 @@ class GreedyPlayer:
         word_length = len(known_word)
         n = self.word_length_to_n.get(word_length, 2)
         padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>'] * (n - 1)
+        #if word_length <= 50:    
+        #    return self.guess_letter_kneser(known_word, already_guessed_letters)
         known_letters = {ch for ch in known_word if ch != '_'}
         known_letters = known_letters.union(already_guessed_letters)
         alphabet = set(self.alphabet) - known_letters
+        #if len(alphabet) == 26:
+        #    return 'e'
+        candidates = self.find_candidates_probabilities(padded_word, word_length, alphabet, n, method_name='best')
+        sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
+        if sorted_candidates:
+            best_letter = sorted_candidates[0][0]
+        else:
+            best_letter = random.choice(list(alphabet))
+        return best_letter
+    
+    def find_candidates_probabilities(self, padded_word, word_length, alphabet, n, method_name='best'):
         candidates = defaultdict(float)
         for i in range(n-1, len(padded_word) - (n-1)):
             if padded_word[i] == '_':
@@ -32,14 +45,7 @@ class GreedyPlayer:
                         reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n)
                         combined_prob = forward_prob * reverse_prob
                         candidates[letter] += combined_prob
-        
-        sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        if sorted_candidates:
-            best_letter = sorted_candidates[0][0]
-        else:
-            best_letter = random.choice(list(alphabet))
-        
-        return best_letter
+        return candidates
 
     def calculate_probability(self, padded_word, i, n, letter):
         # Forward probability
@@ -199,7 +205,7 @@ class GreedyPlayer:
             # Handle case where suffix_count is zero (optional, depending on your logic)
             return 1 / 26  # Or any default value that fits your application logic
 
-    def guess_letter_kneser(self, known_word, already_guessed_letters):
+    def guess_letter_kneser(self, known_word, already_guessed_letters): # find_candidates_probabilities; method_name='kneser'
         word_length = len(known_word)
         n = 6 #self.word_length_to_n.get(word_length, 2)
         padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>'] * (n - 1)
@@ -225,50 +231,7 @@ class GreedyPlayer:
                     combined_prob = forward_prob * reverse_prob
                     candidates[letter] += combined_prob
                     padded_word[i] = '_'
-        
-        sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        if sorted_candidates:
-            best_letter = sorted_candidates[0][0]
-        else:
-            best_letter = random.choice(list(alphabet))
-        
-        return best_letter
-
-    def guess_letter_bestest(self, known_word, already_guessed_letters, override=False):
-        word_length = len(known_word)
-        n = self.word_length_to_n.get(word_length, 2)
-        padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>'] * (n - 1)
-        #if word_length <= 50:    
-        #    return self.guess_letter_kneser(known_word, already_guessed_letters)
-        known_letters = {ch for ch in known_word if ch != '_'}
-        known_letters = known_letters.union(already_guessed_letters)
-        alphabet = set(self.alphabet) - known_letters
-        candidates = defaultdict(float)
-        #if len(alphabet) == 26:
-        #    return 'e'
-        
-        for i in range(n-1, len(padded_word) - (n-1)):
-            if padded_word[i] == '_':
-                for letter in alphabet:  
-                    if word_length > 9:
-                        forward_prob, reverse_prob = self.calculate_probability(padded_word, i, n, letter)
-                        combined_prob = forward_prob * reverse_prob
-                        candidates[letter] += combined_prob
-                    else:
-                        prefix_fwd = tuple(padded_word[i-(n-1):i])
-                        forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n)
-                        suffix_rev = tuple(padded_word[i+1:i+(n-1)+1])
-                        reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n)
-                        combined_prob = forward_prob * reverse_prob
-                        candidates[letter] += combined_prob
-        
-        sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        if sorted_candidates:
-            best_letter = sorted_candidates[0][0]
-        else:
-            best_letter = random.choice(list(alphabet))
-        
-        return best_letter
+        return candidates
     
     def guess_letter_orr(self, known_word, already_guessed_letters, override=False):
         word_length = len(known_word)
@@ -356,16 +319,7 @@ class GreedyPlayer:
                     if prefix in self.ngrams:
                         prob = self.ngrams[prefix][suffix] / sum(self.ngrams[prefix].values())
                         candidates[letter] += prob
-        
-        # Sort candidates by probability
-        sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        
-        if sorted_candidates:
-            best_letter = sorted_candidates[0][0]
-        else:
-            best_letter = random.choice(list(alphabet))  # If no candidates, guess a random letter
-
-        return best_letter
+        return candidates
     
     def guess_letter_o(self, known_word, already_guessed_letters):
         # Pad the known word
@@ -395,17 +349,7 @@ class GreedyPlayer:
                         prob = self.ngrams[prefix][suffix] / sum(self.ngrams[prefix].values())
                         candidates[letter] += prob
                         print(f"Context: {context}, Prefix: {prefix}, Suffix: {suffix}, Prob: {prob}")
-        
-        # Sort candidates by probability
-        sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        print(f"Candidates: {sorted_candidates}")
-        
-        if sorted_candidates:
-            best_letter = sorted_candidates[0][0]
-        else:
-            best_letter = random.choice(list(alphabet))  # If no candidates, guess a random letter
-
-        return best_letter
+        return candidates
     
     def guess_letter_brr(self, known_word, already_guessed_letters):
         # Pad the known word
@@ -435,15 +379,5 @@ class GreedyPlayer:
                         prob = self.ngrams[prefix][suffix] / sum(self.ngrams[prefix].values())
                         candidates[letter] += count
                         print(f"Context: {context}, Prefix: {prefix}, Suffix: {suffix}, Count: {count}")
-        
-        # Sort candidates by probability
-        sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
-        print(f"Candidates: {sorted_candidates}")
-        
-        if sorted_candidates:
-            best_letter = sorted_candidates[0][0]
-        else:
-            best_letter = random.choice(list(alphabet))  # If no candidates, guess a random letter
-
-        return best_letter
+        return candidates
     """
