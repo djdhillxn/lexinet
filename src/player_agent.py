@@ -4,13 +4,14 @@ import pickle
 import os
 
 class GreedyPlayer:
-    def __init__(self, word_length_to_n, ngram_models_kneser_ney_dict):
+    def __init__(self, word_length_to_n, ngram_models_kneser_ney_dict, method_name):
         self.k = 0.05 #0.05 
         self.alphabet = "abcdefghijklmnopqrstuvwxyz"
         self.word_length_to_n = word_length_to_n
         self.ngram_models = ngram_models_kneser_ney_dict
+        self.method_name = method_name
 
-    def guess_letter(self, known_word, already_guessed_letters, override=False):
+    def guess_letter(self, known_word, already_guessed_letters):
         word_length = len(known_word)
         n = self.word_length_to_n.get(word_length, 2)
         padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>'] * (n - 1)
@@ -21,7 +22,7 @@ class GreedyPlayer:
         alphabet = set(self.alphabet) - known_letters
         #if len(alphabet) == 26:
         #    return 'e'
-        candidates = self.find_candidates_probabilities(padded_word, word_length, alphabet, n, method_name='best')
+        candidates = self.find_candidates_probabilities(padded_word, word_length, alphabet, n, self.method_name)
         sorted_candidates = sorted(candidates.items(), key=lambda x: x[1], reverse=True)
         if sorted_candidates:
             best_letter = sorted_candidates[0][0]
@@ -29,7 +30,7 @@ class GreedyPlayer:
             best_letter = random.choice(list(alphabet))
         return best_letter
     
-    def find_candidates_probabilities(self, padded_word, word_length, alphabet, n, method_name='best'):
+    def find_candidates_probabilities(self, padded_word, word_length, alphabet, n, method_name):
         candidates = defaultdict(float)
         for i in range(n-1, len(padded_word) - (n-1)):
             if padded_word[i] == '_':
@@ -53,24 +54,24 @@ class GreedyPlayer:
         prefix = tuple(padded_word[i-(n-1):i])
         forward_prob = 0
         ngrams = self.ngram_models[n]['ngrams']
-        ngrams_rev = self.ngram_models[n]['ngrams_rev']
         if prefix in ngrams:
             forward_count = ngrams[prefix][suffix] + self.k
             total_count = sum(ngrams[prefix].values()) + self.k * len(self.alphabet)
             forward_prob = forward_count / total_count
         elif self.k != 0:
-            forward_prob = self.k / (self.k * len(self.alphabet))
+            forward_prob = self.k / (self.k * len(self.alphabet)) # this is basically 1/26 right...
 
         # Reverse probability
         prefix = letter
         suffix = tuple(padded_word[i+1:i+(n-1)+1])
         reverse_prob = 0
+        ngrams_rev = self.ngram_models[n]['ngrams_rev']
         if suffix in ngrams_rev:
             reverse_count = ngrams_rev[suffix][prefix] + self.k
             total_count = sum(ngrams_rev[suffix].values()) + self.k * len(self.alphabet)
             reverse_prob = reverse_count / total_count
         elif self.k != 0:
-            reverse_prob = self.k / (self.k * len(self.alphabet))
+            reverse_prob = self.k / (self.k * len(self.alphabet)) # this is also 1/26.
 
         return forward_prob, reverse_prob
 
@@ -233,7 +234,7 @@ class GreedyPlayer:
                     padded_word[i] = '_'
         return candidates
     
-    def guess_letter_orr(self, known_word, already_guessed_letters, override=False):
+    def guess_letter_orr(self, known_word, already_guessed_letters):
         word_length = len(known_word)
         n = self.word_length_to_n.get(word_length, 2)
         padded_word = ['<s>'] * (n - 1) + list(known_word) + ['</s>'] * (n - 1)

@@ -42,12 +42,12 @@ def _play_game_with_player(actual_word, player, max_lives):
     return obscured_word == actual_word
 
 
-def _initialize_worker(models_dir, run_name, word_length_to_n, max_lives):
+def _initialize_worker(models_dir, run_name, word_length_to_n, max_lives, method_name):
     global _WORKER_PLAYER
     global _WORKER_MAX_LIVES
 
     ngram_models_kneser_ney = _load_all_kneser_ney_models(models_dir, run_name, verbose=False)
-    _WORKER_PLAYER = GreedyPlayer(word_length_to_n, ngram_models_kneser_ney)
+    _WORKER_PLAYER = GreedyPlayer(word_length_to_n, ngram_models_kneser_ney, method_name)
     _WORKER_MAX_LIVES = max_lives
 
 
@@ -60,17 +60,17 @@ def _simulate_word_in_worker(actual_word):
 
 
 class GameSimulator:
-    def __init__(self, word_list_path, models_dir, run_name='kneser_ney', max_lives=6, num_games=1):
+    def __init__(self, word_list_path, models_dir, run_name='kneser_ney', method_name='best', max_lives=6, num_games=1):
         self.word_list_path = word_list_path
         self.max_lives = max_lives
         self.num_games = num_games
         self.models_dir = models_dir
         self.run_name = run_name
+        self.method_name = method_name
         self.word_list = preprocess_data(load_data(word_list_path))
         self.word_length_to_n = self.get_word_length_to_n()
-        #self.ngram_models, self.ngram_models_rev = self.load_all_models(models_dir)
         self.ngram_models_kneser_ney = _load_all_kneser_ney_models(self.models_dir, self.run_name, verbose=False)
-        self.player = GreedyPlayer(self.word_length_to_n, self.ngram_models_kneser_ney)
+        self.player = GreedyPlayer(self.word_length_to_n, self.ngram_models_kneser_ney, self.method_name)
         
     def get_word_length_to_n(self):
         word_length_to_n = {}
@@ -90,25 +90,6 @@ class GameSimulator:
         for l in range(1, 50):
             word_length_to_n[l] = n
         return word_length_to_n
-
-    def play_game(self, actual_word, player=None):
-        if player:
-            self.player = player
-        obscured_word = '_' * len(actual_word)
-        lives = self.max_lives
-        already_guessed_letters = set()
-        while lives > 0 and obscured_word != actual_word:
-            guessed_letter = self.player.guess_letter(obscured_word, already_guessed_letters)
-            already_guessed_letters.add(guessed_letter)
-            if guessed_letter in actual_word: 
-                indices = [i for i, letter in enumerate(actual_word) if letter == guessed_letter]
-                obscured_word_list = list(obscured_word)
-                for i in indices:
-                    obscured_word_list[i] = guessed_letter
-                obscured_word = ''.join(obscured_word_list)
-            else:
-                lives -= 1
-        return obscured_word == actual_word
 
     def _create_results_df(self, results_by_length):
         import pandas as pd
@@ -151,7 +132,7 @@ class GameSimulator:
         executor_kwargs = {"max_workers": n_workers, "mp_context": context}
 
         if start_method == "fork":
-            _WORKER_PLAYER = GreedyPlayer(word_length_to_n, self.ngram_models_kneser_ney)
+            _WORKER_PLAYER = GreedyPlayer(word_length_to_n, self.ngram_models_kneser_ney, self.method_name)
             _WORKER_MAX_LIVES = self.max_lives
         else:
             executor_kwargs["initializer"] = _initialize_worker
@@ -178,7 +159,7 @@ class GameSimulator:
             print(f"using n_{n}_grams")
             word_length_to_n = self.create_word_length_to_n(n)
             print(word_length_to_n)
-            self.player = GreedyPlayer(word_length_to_n, self.ngram_models_kneser_ney)
+            self.player = GreedyPlayer(word_length_to_n, self.ngram_models_kneser_ney, self.method_name)
         else:
             word_length_to_n = self.word_length_to_n
             print(self.word_length_to_n)
@@ -206,7 +187,7 @@ class GameSimulator:
             word_length = len(actual_word)
             #if word_length > 7:
             #    continue
-            if self.play_game(actual_word):
+            if _play_game_with_player(actual_word, self.player, self.max_lives):
                 num_wins += 1
                 results_by_length[word_length]['wins'] += 1
             results_by_length[word_length]['total'] += 1
