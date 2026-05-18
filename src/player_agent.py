@@ -34,52 +34,25 @@ class GreedyPlayer:
         candidates = defaultdict(float)
         for i in range(n-1, len(padded_word) - (n-1)):
             if padded_word[i] == '_':
-                for letter in alphabet:  
+                prefix_fwd = tuple(padded_word[i-(n-1):i]) # prefix for the ith index letter with the prefix being of size n-1
+                suffix_rev = tuple(padded_word[i+1:i+(n-1)+1]) # suffix for the ith index letter with the suffix being of size n-1
+                for letter in alphabet:    
+                    # the logic inside this for loop is what we really ought to customize based on the method_name...which we will make it even better by making it method_name_and_config...
+                    # this method_name_and_config shall have all the details...cuz the romance is in the details... 
                     if word_length > 9: # for words with large lengths, we have not used interpolation for our benchmark results...
-                        prefix_fwd = tuple(padded_word[i-(n-1):i])
                         forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n, use_interpolation=False, smoothing_factor=self.k, give_random_prob_to_sparsity=True)
-    
-                        suffix_rev = tuple(padded_word[i+1:i+(n-1)+1])
                         reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n, use_interpolation=False, smoothing_factor=self.k, give_random_prob_to_sparsity=True)
-                        
-                        #forward_prob, reverse_prob = self.calculate_probability(padded_word, i, n, letter)
-                        combined_prob = forward_prob * reverse_prob
-                        candidates[letter] += combined_prob
+                        # instead of using interpolation, we have given random prob to sparsity... which should encourage exploration... and it does give real good results...
                     else:
-                        prefix_fwd = tuple(padded_word[i-(n-1):i])
                         forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False)
-                        suffix_rev = tuple(padded_word[i+1:i+(n-1)+1])
                         reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False)
-                        combined_prob = forward_prob * reverse_prob
-                        candidates[letter] += combined_prob
+                        # for the case of words of length <=9... we get not so great results... part of the reason could be that we are poorly implementing this interpolation...
+                        # we just simply give 80% weightage to the highest order ngram.. and the reamining to the estimates from the shorter/nearer ngrams... 
+                        # in the book by dan jurafsky... they said that one could get optimal coefficient for these interpolations by using the EM algorithm... how about we do that...huh!!!
+                    combined_prob = forward_prob * reverse_prob
+                    # combined_prob = forward_prob # using just the forward prob gives poor results empirically, bidirectional model better captures the patterns...
+                    candidates[letter] += combined_prob
         return candidates
-
-    def calculate_probability(self, padded_word, i, n, letter):
-        # Forward probability
-        suffix = letter
-        prefix = tuple(padded_word[i-(n-1):i])
-        forward_prob = 0
-        ngrams = self.ngram_models[n]['ngrams']
-        if prefix in ngrams:
-            forward_count = ngrams[prefix][suffix] + self.k
-            total_count = sum(ngrams[prefix].values()) + self.k * len(self.alphabet)
-            forward_prob = forward_count / total_count
-        elif self.k != 0:
-            forward_prob = self.k / (self.k * len(self.alphabet)) # this is basically 1/26 right...
-
-        # Reverse probability
-        prefix = letter
-        suffix = tuple(padded_word[i+1:i+(n-1)+1])
-        reverse_prob = 0
-        ngrams_rev = self.ngram_models[n]['ngrams_rev']
-        if suffix in ngrams_rev:
-            reverse_count = ngrams_rev[suffix][prefix] + self.k
-            total_count = sum(ngrams_rev[suffix].values()) + self.k * len(self.alphabet)
-            reverse_prob = reverse_count / total_count
-        elif self.k != 0:
-            reverse_prob = self.k / (self.k * len(self.alphabet)) # this is also 1/26.
-
-        return forward_prob, reverse_prob
 
     def calculate_forward_probability(self, prefix, letter, n, use_interpolation, smoothing_factor, give_random_prob_to_sparsity):
         forward_prob = 0
@@ -116,7 +89,7 @@ class GreedyPlayer:
         elif give_random_prob_to_sparsity:
             reverse_prob = 1/26
         #elif self.k != 0:
-        #    reverse_prob = 0.001# / (self.k * len(self.alphabet))
+        #    reverse_prob = 0.001 #self.k / (self.k * len(self.alphabet))
         mu = 0.80
         if use_interpolation and len(suffix) > 2:
             backoff_prob = self.calculate_backward_probability(suffix[:-1], letter, n - 1, use_interpolation, smoothing_factor, give_random_prob_to_sparsity)
