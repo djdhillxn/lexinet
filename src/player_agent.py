@@ -35,15 +35,21 @@ class GreedyPlayer:
         for i in range(n-1, len(padded_word) - (n-1)):
             if padded_word[i] == '_':
                 for letter in alphabet:  
-                    if word_length > 9:
-                        forward_prob, reverse_prob = self.calculate_probability(padded_word, i, n, letter)
+                    if word_length > 9: # for words with large lengths, we have not used interpolation for our benchmark results...
+                        prefix_fwd = tuple(padded_word[i-(n-1):i])
+                        forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n, use_interpolation=False, smoothing_factor=self.k, give_random_prob_to_sparsity=True)
+    
+                        suffix_rev = tuple(padded_word[i+1:i+(n-1)+1])
+                        reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n, use_interpolation=False, smoothing_factor=self.k, give_random_prob_to_sparsity=True)
+                        
+                        #forward_prob, reverse_prob = self.calculate_probability(padded_word, i, n, letter)
                         combined_prob = forward_prob * reverse_prob
                         candidates[letter] += combined_prob
                     else:
                         prefix_fwd = tuple(padded_word[i-(n-1):i])
-                        forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n)
+                        forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False)
                         suffix_rev = tuple(padded_word[i+1:i+(n-1)+1])
-                        reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n)
+                        reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False)
                         combined_prob = forward_prob * reverse_prob
                         candidates[letter] += combined_prob
         return candidates
@@ -75,34 +81,45 @@ class GreedyPlayer:
 
         return forward_prob, reverse_prob
 
-    def calculate_forward_probability(self, prefix, suffix, n):
+    def calculate_forward_probability(self, prefix, letter, n, use_interpolation, smoothing_factor, give_random_prob_to_sparsity):
         forward_prob = 0
         ngrams = self.ngram_models[n]['ngrams']
         if prefix in ngrams:
-            forward_count = ngrams[prefix][suffix] #+ self.k
-            total_count = sum(ngrams[prefix].values()) #+ self.k * len(self.alphabet)
+            forward_count = ngrams[prefix][letter] + smoothing_factor
+            total_count = sum(ngrams[prefix].values()) + smoothing_factor * len(self.alphabet)
             forward_prob = forward_count / total_count
+        elif give_random_prob_to_sparsity:
+            forward_prob = 1/26 # this is not the most correct thing to do.. but we did it historically to arrive at the 64% test win rate
+            # we shall fix this to get even better results... real soon...
         #elif self.k != 0:
         #    forward_prob = 0.001 #self.k / (self.k * len(self.alphabet))
         mu = 0.80
-        if len(prefix) > 2:
-            backoff_prob = self.calculate_forward_probability(prefix[1:], suffix, n - 1)
+        if use_interpolation and len(prefix) > 2:
+            backoff_prob = self.calculate_forward_probability(prefix[1:], letter, n - 1, use_interpolation, smoothing_factor, give_random_prob_to_sparsity)
             forward_prob = mu * forward_prob + (1 - mu) * backoff_prob
         
         return forward_prob
 
-    def calculate_backward_probability(self, suffix, prefix, n):
+    def calculate_backward_probability(self, suffix, letter, n, use_interpolation, smoothing_factor, give_random_prob_to_sparsity):
         reverse_prob = 0
         ngrams_rev = self.ngram_models[n]['ngrams_rev']
+        # to illustrate how this backward probability works:
+        # co-umb-a
+        # at the index i=2, we have a dashed position which we want to find the probability of the potential candidate letters.
+        # the subword after i=2 is: umb-a
+        # we would using our trained masked model counts to predict the most probable letter which is succedded by this subword: umb-a, i.e. the suffix umb-a
+        # the letter 'l' seems probable... which would make this word: columb-a... and the next dash can be filled with high probability by the letter 'i' to make the word 'columbia'!
         if suffix in ngrams_rev:
-            reverse_count = ngrams_rev[suffix][prefix] #+ self.k
-            total_count = sum(ngrams_rev[suffix].values()) #+ self.k * len(self.alphabet)
+            reverse_count = ngrams_rev[suffix][letter] + smoothing_factor
+            total_count = sum(ngrams_rev[suffix].values()) + smoothing_factor * len(self.alphabet)
             reverse_prob = reverse_count / total_count
+        elif give_random_prob_to_sparsity:
+            reverse_prob = 1/26
         #elif self.k != 0:
         #    reverse_prob = 0.001# / (self.k * len(self.alphabet))
         mu = 0.80
-        if len(suffix) > 2:
-            backoff_prob = self.calculate_backward_probability(suffix[:-1], prefix, n - 1)
+        if use_interpolation and len(suffix) > 2:
+            backoff_prob = self.calculate_backward_probability(suffix[:-1], letter, n - 1, use_interpolation, smoothing_factor, give_random_prob_to_sparsity)
             reverse_prob = mu * reverse_prob + (1 - mu) * backoff_prob
 
         return reverse_prob
