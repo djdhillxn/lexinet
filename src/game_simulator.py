@@ -91,6 +91,11 @@ class GameSimulator:
             word_length_to_n[l] = n
         return word_length_to_n
 
+    def play_game(self, actual_word, player=None):
+        if player:
+            self.player = player
+        return _play_game_with_player(actual_word, self.player, self.max_lives)
+
     def _create_results_df(self, results_by_length):
         import pandas as pd
 
@@ -136,7 +141,7 @@ class GameSimulator:
             _WORKER_MAX_LIVES = self.max_lives
         else:
             executor_kwargs["initializer"] = _initialize_worker
-            executor_kwargs["initargs"] = (self.models_dir, self.run_name, word_length_to_n, self.max_lives)
+            executor_kwargs["initargs"] = (self.models_dir, self.run_name, word_length_to_n, self.max_lives, self.method_name)
 
         try:
             with ProcessPoolExecutor(**executor_kwargs) as executor:

@@ -4,7 +4,7 @@ import pickle
 import os
 
 class GreedyPlayer:
-    def __init__(self, word_length_to_n, ngram_models_kneser_ney_dict, method_name):
+    def __init__(self, word_length_to_n, ngram_models_kneser_ney_dict, method_name='best'):
         self.k = 0.05 #0.05 
         self.alphabet = "abcdefghijklmnopqrstuvwxyz"
         self.word_length_to_n = word_length_to_n
@@ -32,6 +32,7 @@ class GreedyPlayer:
     
     def find_candidates_probabilities(self, padded_word, word_length, alphabet, n, method_name):
         candidates = defaultdict(float)
+        probability_config = self.probability_config_for_word_length(word_length)
         for i in range(n-1, len(padded_word) - (n-1)):
             if padded_word[i] == '_':
                 prefix_fwd = tuple(padded_word[i-(n-1):i]) # prefix for the ith index letter with the prefix being of size n-1
@@ -39,22 +40,30 @@ class GreedyPlayer:
                 for letter in alphabet:    
                     # the logic inside this for loop is what we really ought to customize based on the method_name...which we will make it even better by making it method_name_and_config...
                     # this method_name_and_config shall have all the details...cuz the romance is in the details... 
-                    if word_length > 9: # for words with large lengths, we have not used interpolation for our benchmark results...
-                        forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n, use_interpolation=False, smoothing_factor=self.k, give_random_prob_to_sparsity=True)
-                        reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n, use_interpolation=False, smoothing_factor=self.k, give_random_prob_to_sparsity=True)
-                        # instead of using interpolation, we have given random prob to sparsity... which should encourage exploration... and it does give real good results...
-                    else:
-                        forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False)
-                        reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False)
-                        # for the case of words of length <=9... we get not so great results... part of the reason could be that we are poorly implementing this interpolation...
-                        # we just simply give 80% weightage to the highest order ngram.. and the reamining to the estimates from the shorter/nearer ngrams... 
-                        # in the book by dan jurafsky... they said that one could get optimal coefficient for these interpolations by using the EM algorithm... how about we do that...huh!!!
+                    forward_prob = self.calculate_forward_probability(prefix_fwd, letter, n, **probability_config)
+                    reverse_prob = self.calculate_backward_probability(suffix_rev, letter, n, **probability_config)    
                     combined_prob = forward_prob * reverse_prob
                     # combined_prob = forward_prob # using just the forward prob gives poor results empirically, bidirectional model better captures the patterns...
                     candidates[letter] += combined_prob
         return candidates
 
-    def calculate_forward_probability(self, prefix, letter, n, use_interpolation, smoothing_factor, give_random_prob_to_sparsity):
+    def probability_config_for_word_length(self, word_length):
+        if word_length > 9: # for words with large lengths, we have not used interpolation for our benchmark results...
+            return { # instead of using interpolation, we have given random prob to sparsity... which should encourage exploration... and it does give real good results...
+                'use_interpolation': False,
+                'smoothing_factor': self.k,
+                'give_random_prob_to_sparsity': True, 
+            }
+        return {
+            'use_interpolation': True,
+            'smoothing_factor': 0,
+            'give_random_prob_to_sparsity': False,
+            # for the case of words of length <=9... we get not so great results... part of the reason could be that we are poorly implementing this interpolation...
+            # we just simply give 80% weightage to the highest order ngram.. and the reamining to the estimates from the shorter/nearer ngrams... 
+            # in the book by dan jurafsky... they said that one could get optimal coefficient for these interpolations by using the EM algorithm... how about we do that...huh!!!
+        }
+
+    def calculate_forward_probability(self, prefix, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False):
         forward_prob = 0
         ngrams = self.ngram_models[n]['ngrams']
         if prefix in ngrams:
@@ -73,7 +82,7 @@ class GreedyPlayer:
         
         return forward_prob
 
-    def calculate_backward_probability(self, suffix, letter, n, use_interpolation, smoothing_factor, give_random_prob_to_sparsity):
+    def calculate_backward_probability(self, suffix, letter, n, use_interpolation=True, smoothing_factor=0, give_random_prob_to_sparsity=False):
         reverse_prob = 0
         ngrams_rev = self.ngram_models[n]['ngrams_rev']
         # to illustrate how this backward probability works:
