@@ -56,7 +56,7 @@ class GreedyPlayer:
             }
         return {
             'use_interpolation': True,
-            'smoothing_factor': 0,
+            'smoothing_factor': self.k,
             'give_random_prob_to_sparsity': False,
             # for the case of words of length <=9... we get not so great results... part of the reason could be that we are poorly implementing this interpolation...
             # we just simply give 80% weightage to the highest order ngram.. and the reamining to the estimates from the shorter/nearer ngrams... 
